@@ -64,9 +64,11 @@ public class PlayerMovement : MonoBehaviour
             animator.SetBool("IsJumping", true);
         }
     }*/
-    private float moveSpeed = 7f;
-    private float jumpSpeed = 8f;
+    /*[SerializeField] private float moveSpeed;
+    [SerializeField] private float jumpSpeed;
+    [SerializeField] private float walkSpeed;
     private CharacterController characterController;
+
     public Transform cameraPosition;
     public float mouseSens;
     public bool invertX;
@@ -79,17 +81,8 @@ public class PlayerMovement : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
     }
-    void Update()
+    /*void Update()
     {
-        //moveVector.x=Input.GetAxis("Horizontal")*moveSpeed * Time.deltaTime;
-        //moveVector.z=Input.GetAxis("Vertical")*moveSpeed*Time.deltaTime;
-
-        /*Vector3 moveVr=Input.GetAxis("Vertical")*transform.forward;
-        Vector3 moveHr=Input.GetAxis("Horizontal")*transform.right;
-        moveVector=moveHr+moveVr;
-        moveVector.Normalize();
-        moveVector=moveVector * moveSpeed * Time.deltaTime;
-        characterController.Move(moveVector);*/
         float moveHr = Input.GetAxis("Horizontal") * moveSpeed;
         float moveVr = Input.GetAxis("Vertical") * moveSpeed;
         moveVector = new Vector3(moveHr, moveVector.y, moveVr);
@@ -125,5 +118,95 @@ public class PlayerMovement : MonoBehaviour
         moveVector = transform.TransformDirection(moveVector);
         moveVector.y -= this.gravity * Time.deltaTime;
         characterController.Move(moveVector * Time.deltaTime);
+    }*/
+    [SerializeField] private float moveSpeed;
+    [SerializeField] private float jumpHeight;
+    [SerializeField] private float walkSpeed;
+    [SerializeField] private float runSpeed;
+
+    [SerializeField] private bool isGrounded;
+    [SerializeField] private float groundCheckDistanse;
+    [SerializeField] private LayerMask groundMask;
+    [SerializeField] private float gravity;
+
+    private CharacterController characterController;
+    private Vector3 moveDirection;
+    private Vector3 velocity;
+
+    private Animator animator;
+
+    void Start()
+    {
+        characterController = GetComponent<CharacterController>();
+        animator = GetComponentInChildren<Animator>();
+    }
+    private void Update()
+    {
+        Move();
+    }
+    private void Move()
+    {
+        isGrounded = Physics.CheckSphere(transform.position, groundCheckDistanse, groundMask);
+        if (isGrounded && velocity.y<0)
+        {
+            velocity.y = -2f;
+        }
+
+        float moveZ = Input.GetAxis("Vertical");
+
+        moveDirection = new Vector3(0, 0, moveZ);
+        moveDirection = transform.TransformDirection(moveDirection);
+
+        if (isGrounded)
+        {
+            if (moveDirection != Vector3.zero && !Input.GetKey(KeyCode.LeftShift))
+            {
+                Walk();
+            }
+            if (moveDirection != Vector3.zero && Input.GetKey(KeyCode.LeftShift))
+            {
+                Run();
+            }
+            else if (moveDirection == Vector3.zero)
+            {
+                Idle();
+            }
+
+            moveDirection *= moveSpeed;
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                Jump();
+                animator.SetBool("isJumping", true);
+            }
+        }
+        else OnLanding();
+
+       
+        characterController.Move(moveDirection * Time.deltaTime);    
+        
+        velocity.y+=gravity*Time.deltaTime;
+        characterController.Move(velocity * Time.deltaTime);    
+    }
+    void OnLanding()
+    {
+        animator.SetBool("isJumping", false);
+    }
+    private void Idle()
+    {
+        animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
+    }
+    private void Walk()
+    {
+        moveSpeed = walkSpeed;
+        animator.SetFloat("Speed", 0.5f, 0.1f, Time.deltaTime);
+    }
+    private void Run()
+    {
+        moveSpeed = runSpeed;
+        animator.SetFloat("Speed", 1, 0.1f, Time.deltaTime);
+    }
+    private void Jump()
+    {
+        velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
     }
 }
